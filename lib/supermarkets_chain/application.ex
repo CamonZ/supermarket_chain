@@ -9,7 +9,8 @@ defmodule SupermarketsChain.Application do
   def start(_type, _args) do
     children = [
       SupermarketsChainWeb.Telemetry,
-      {DNSCluster, query: Application.get_env(:supermarkets_chain, :dns_cluster_query) || :ignore},
+      {DNSCluster,
+       query: Application.get_env(:supermarkets_chain, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: SupermarketsChain.PubSub},
       # Start a worker by calling: SupermarketsChain.Worker.start_link(arg)
       # {SupermarketsChain.Worker, arg},
