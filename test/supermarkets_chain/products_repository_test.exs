@@ -1,5 +1,5 @@
 defmodule SupermarketsChain.ProductsRepositoryTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
 
   alias SupermarketsChain.Schemas.Product
   alias SupermarketsChain.ProductsRepository
@@ -24,28 +24,29 @@ defmodule SupermarketsChain.ProductsRepositoryTest do
     assert :ets.tab2list(state.storage_table_ref) == @products
   end
 
-  describe "with data already loaded" do
-    setup do
-      {:ok, state, _} = ProductsRepository.init([])
-      ProductsRepository.handle_continue(:hydrate_repo, state)
+  test "list_products/0 lists all the products loaded in the repository" do
+    {:ok, _} = ProductsRepository.start_link([])
+    Process.sleep(50)
+    expected = Enum.map(@products, &elem(&1, 1))
 
-      {:ok, state: state}
+    assert ProductsRepository.list_products() == expected
+  end
+
+  describe "get_product/1" do
+    test "returns the product from a valid product code" do
+      {:ok, _} = ProductsRepository.start_link([])
+      Process.sleep(50)
+      result = ProductsRepository.get_product("CF1")
+
+      assert result == %Product{code: "CF1", name: "Coffee", price: Decimal.new("11.23")}
     end
 
-    test "handle_call/3 :list_products lists all the products loaded in the repository", ctx do
-      expected = Enum.map(@products, &elem(&1, 1))
+    test "returns nil on an invalid product code" do
+      {:ok, _} = ProductsRepository.start_link([])
+      Process.sleep(50)
+      result = ProductsRepository.get_product("FOO")
 
-      assert {:reply, reply, _} =
-               ProductsRepository.handle_call(:list_products, self(), ctx.state)
-
-      assert reply == expected
-    end
-
-    test "handle_call/3 :get_product returns the details of a product", ctx do
-      assert {:reply, reply, _} =
-               ProductsRepository.handle_call({:get_product, "CF1"}, self(), ctx.state)
-
-      assert reply == %Product{code: "CF1", name: "Coffee", price: Decimal.new("11.23")}
+      assert is_nil(result)
     end
   end
 end
