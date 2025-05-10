@@ -14,21 +14,38 @@ defmodule SupermarketsChain.ProductsRepository do
 
   defstruct storage_table_ref: nil
 
+  @table_name :products_repository
+
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   def list_products do
-    GenServer.call(__MODULE__, :list_products)
+    @table_name
+    |> :ets.tab2list()
+    |> Enum.map(&elem(&1, 1))
   end
 
   def get_product(code) do
-    GenServer.call(__MODULE__, {:get_product, code})
+    @table_name
+    |> :ets.lookup(code)
+    |> List.first()
+    |> elem(1)
+  rescue
+    _ ->
+      nil
   end
 
   @impl true
   def init(_opts) do
-    table_ref = :ets.new(:products_repository, [:set, :private])
+    table_ref =
+      case :ets.whereis(@table_name) do
+        :undefined ->
+          :ets.new(@table_name, [:set, :protected, :named_table, {:read_concurrency, true}])
+
+        other when is_reference(other) ->
+          other
+      end
 
     {:ok, %__MODULE__{storage_table_ref: table_ref}, {:continue, :hydrate_repo}}
   end
@@ -44,26 +61,5 @@ defmodule SupermarketsChain.ProductsRepository do
     end)
 
     {:noreply, state}
-  end
-
-  @impl true
-  def handle_call(:list_products, _, state) do
-    products =
-      state.storage_table_ref
-      |> :ets.tab2list()
-      |> Enum.map(&elem(&1, 1))
-
-    {:reply, products, state}
-  end
-
-  @impl true
-  def handle_call({:get_product, code}, _, state) do
-    product =
-      state.storage_table_ref
-      |> :ets.lookup(code)
-      |> List.first()
-      |> elem(1)
-
-    {:reply, product, state}
   end
 end
