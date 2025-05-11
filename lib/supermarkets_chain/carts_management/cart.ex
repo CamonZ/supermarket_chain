@@ -13,8 +13,10 @@ defmodule SupermarketsChain.CartsManagement.Cart do
 
   alias SupermarketsChain.CartsManagement.Cart.Item
   alias SupermarketsChain.CartsManagement.Manager
+  alias SupermarketsChain.DiscountRulesRepository
   alias SupermarketsChain.ProductsRepository
   alias SupermarketsChain.Schemas.Product
+  alias SupermarketsChain.Schemas.DiscountRule
 
   defstruct items: %{}, cart_id: nil
 
@@ -25,8 +27,9 @@ defmodule SupermarketsChain.CartsManagement.Cart do
 
   def add_product(uuid, code) do
     with {:cart_lookup, {:ok, pid}} <- lookup_cart(uuid),
-         {:product_lookup, {:ok, product}} <- lookup_product(code) do
-      GenServer.call(pid, {:add_product, product})
+         {:product_lookup, {:ok, product}} <- lookup_product(code),
+         {:rule_lookup, {:ok, rule}} <- lookup_rule(product.code) do
+      GenServer.call(pid, {:add_product, product, rule})
     else
       {_, error} ->
         error
@@ -35,11 +38,22 @@ defmodule SupermarketsChain.CartsManagement.Cart do
 
   def remove_product(uuid, code) do
     with {:cart_lookup, {:ok, pid}} <- lookup_cart(uuid),
-         {:product_lookup, {:ok, product}} <- lookup_product(code) do
-      GenServer.call(pid, {:remove_product, product})
+         {:product_lookup, {:ok, product}} <- lookup_product(code),
+         {:rule_lookup, {:ok, rule}} <- lookup_rule(product.code) do
+      GenServer.call(pid, {:remove_product, product, rule})
     else
       {_, error} ->
         error
+    end
+  end
+
+  def calculate_total(uuid) do
+    case lookup_cart(uuid) do
+      {:cart_lookup, {:ok, pid}} ->
+        GenServer.call(pid, :calculate_total)
+
+      _ ->
+        {:error, "invalid_cart_id"}
     end
   end
 
@@ -72,16 +86,23 @@ defmodule SupermarketsChain.CartsManagement.Cart do
   end
 
   @impl true
-  def handle_call({:add_product, product}, _, state) do
-    item = cart_item_from_added_product(state.items, product)
+  def handle_call({:add_product, %Product{} = product, rule}, _, state) do
+    item =
+      state.items
+      |> cart_item_from_added_product(product)
+      |> apply_rule(rule)
+
     items = Map.put(state.items, product.code, item)
 
     {:reply, {:ok, items}, %{state | items: items}}
   end
 
   @impl true
-  def handle_call({:remove_product, product}, _, state) do
-    item = cart_item_from_removed_product(state.items, product)
+  def handle_call({:remove_product, %Product{} = product, rule}, _, state) do
+    item =
+      state.items
+      |> cart_item_from_removed_product(product)
+      |> apply_rule(rule)
 
     items =
       if is_nil(item) do
@@ -91,6 +112,18 @@ defmodule SupermarketsChain.CartsManagement.Cart do
       end
 
     {:reply, {:ok, items}, %{state | items: items}}
+  end
+
+  @impl true
+  def handle_call(:calculate_total, _, state) do
+    total =
+      state.items
+      |> Map.values()
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    {:reply, {:ok, total}, state}
   end
 
   defp cart_item_from_added_product(items, product) do
@@ -139,5 +172,29 @@ defmodule SupermarketsChain.CartsManagement.Cart do
       %Product{} = product ->
         {:product_lookup, {:ok, product}}
     end
+  end
+
+  defp lookup_rule(code) do
+    case DiscountRulesRepository.get_rule_for(code) do
+      nil ->
+        {:rule_lookup, {:ok, nil}}
+
+      %DiscountRule{} = rule ->
+        {:rule_lookup, {:ok, rule}}
+    end
+  end
+
+  defp apply_rule(%Item{} = item, %DiscountRule{} = rule) do
+    with mod when not is_nil(mod) <- DiscountRule.strategy_implementation_for(rule),
+         true <- mod.applicable?(item, rule) do
+      mod.calculate_subtotal(item, rule)
+    else
+      _ ->
+        item
+    end
+  end
+
+  defp apply_rule(item, _) do
+    item
   end
 end

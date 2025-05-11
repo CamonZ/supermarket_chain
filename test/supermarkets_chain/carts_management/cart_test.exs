@@ -5,11 +5,14 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
   alias SupermarketsChain.CartsManagement.Cart
   alias SupermarketsChain.CartsManagement.Cart.Item
   alias SupermarketsChain.ProductsRepository
+  alias SupermarketsChain.DiscountRulesRepository
 
   setup_all do
     {:ok, _} = Registry.start_link(keys: :unique, name: Manager.registry_name())
     ProductsRepository.start_link([])
-    Process.sleep(50)
+    DiscountRulesRepository.start_link([])
+
+    Process.sleep(100)
     :ok
   end
 
@@ -26,7 +29,6 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
     test "adds a new product to a cart and returns the items in the cart" do
       uuid = Ecto.UUID.generate()
       name = {:via, Registry, {Manager.registry_name(), uuid}}
-
       {:ok, _} = Cart.start_link(uuid: uuid, name: name)
 
       {:ok, items} = Cart.add_product(uuid, "CF1")
@@ -172,6 +174,60 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
       {:ok, _} = Cart.start_link(uuid: uuid, name: name, items: items)
 
       assert {:ok, %{}} = Cart.remove_product(uuid, "CF1")
+    end
+  end
+
+  describe "calculate_total/1" do
+    test "returns the correct total for scenario 1" do
+      uuid = Ecto.UUID.generate()
+      name = {:via, Registry, {Manager.registry_name(), uuid}}
+      {:ok, _} = Cart.start_link(uuid: uuid, name: name)
+
+      Cart.add_product(uuid, "GR1")
+      Cart.add_product(uuid, "SR1")
+      Cart.add_product(uuid, "GR1")
+      Cart.add_product(uuid, "GR1")
+      Cart.add_product(uuid, "CF1")
+
+      assert {:ok, Decimal.new("22.45")} == Cart.calculate_total(uuid)
+    end
+
+    test "returns the correct total for scenario 2" do
+      uuid = Ecto.UUID.generate()
+      name = {:via, Registry, {Manager.registry_name(), uuid}}
+      {:ok, _} = Cart.start_link(uuid: uuid, name: name)
+
+      Cart.add_product(uuid, "GR1")
+      Cart.add_product(uuid, "GR1")
+
+      assert {:ok, Decimal.new("3.11")} == Cart.calculate_total(uuid)
+    end
+
+    test "returns the correct total for scenario 3" do
+      uuid = Ecto.UUID.generate()
+      name = {:via, Registry, {Manager.registry_name(), uuid}}
+      {:ok, _} = Cart.start_link(uuid: uuid, name: name)
+
+      Cart.add_product(uuid, "SR1")
+      Cart.add_product(uuid, "SR1")
+      Cart.add_product(uuid, "GR1")
+      Cart.add_product(uuid, "SR1")
+
+      assert {:ok, Decimal.new("16.61")} == Cart.calculate_total(uuid)
+    end
+
+    test "returns the correct total for scenario 4" do
+      uuid = Ecto.UUID.generate()
+      name = {:via, Registry, {Manager.registry_name(), uuid}}
+      {:ok, _} = Cart.start_link(uuid: uuid, name: name)
+
+      Cart.add_product(uuid, "GR1")
+      Cart.add_product(uuid, "CF1")
+      Cart.add_product(uuid, "SR1")
+      Cart.add_product(uuid, "CF1")
+      Cart.add_product(uuid, "CF1")
+
+      assert {:ok, Decimal.new("30.57")} == Cart.calculate_total(uuid)
     end
   end
 end

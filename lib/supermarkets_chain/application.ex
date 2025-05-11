@@ -5,6 +5,9 @@ defmodule SupermarketsChain.Application do
 
   use Application
 
+  alias SupermarketsChain.DiscountRulesRepository
+  alias SupermarketsChain.ProductsRepository
+
   @impl true
   def start(_type, _args) do
     children = [
@@ -17,6 +20,13 @@ defmodule SupermarketsChain.Application do
       # Start to serve requests, typically the last entry
       SupermarketsChainWeb.Endpoint
     ]
+
+    children =
+      if Mix.env() != :test do
+        children ++ [ProductsRepository, DiscountRulesRepository]
+      else
+        children
+      end
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
