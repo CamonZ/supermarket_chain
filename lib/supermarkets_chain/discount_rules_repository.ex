@@ -1,27 +1,24 @@
-defmodule SupermarketsChain.ProductsRepository do
+defmodule SupermarketsChain.DiscountRulesRepository do
   @moduledoc """
-  Defines a GenServer that acts as an interface to return the current list of products in the system
-  as well as return the details of a specific product.
-
-  It checks if a given product being added to a cart exists (by its code) and it can further be extended
-  to check inventory existences of the given product
+  Defines a GenServer that acts as an interface to return the current list of
+  discount rules applicable to different products
   """
 
   use GenServer
 
   alias SuperMarketsChain.DataLoader
-  alias SupermarketsChain.Schemas.Product
+  alias SupermarketsChain.Schemas.DiscountRule
 
   defstruct storage_table_ref: nil
 
-  @table_name :products_repository
+  @table_name :discount_rules_repository
 
   def start_link(opts) do
     name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
-  def list_products(opts \\ []) do
+  def list_rules(opts \\ []) do
     table_name = Keyword.get(opts, :table_name, @table_name)
 
     table_name
@@ -29,11 +26,11 @@ defmodule SupermarketsChain.ProductsRepository do
     |> Enum.map(&elem(&1, 1))
   end
 
-  def get_product(code, opts \\ []) do
+  def get_rule_for(product_code, opts \\ []) do
     table_name = Keyword.get(opts, :table_name, @table_name)
 
     table_name
-    |> :ets.lookup(code)
+    |> :ets.lookup(product_code)
     |> List.first()
     |> elem(1)
   rescue
@@ -51,12 +48,12 @@ defmodule SupermarketsChain.ProductsRepository do
 
   @impl true
   def handle_continue(:hydrate_repo, state) do
-    data = DataLoader.load_products()
+    data = DataLoader.load_rules()
 
-    products = data |> Enum.map(&Product.load/1) |> Keyword.get_values(:ok)
+    rules = data |> Enum.map(&DiscountRule.load/1) |> Keyword.get_values(:ok)
 
-    Enum.each(products, fn product ->
-      :ets.insert(state.storage_table_ref, {product.code, product})
+    Enum.each(rules, fn rule ->
+      :ets.insert(state.storage_table_ref, {rule.product_code, rule})
     end)
 
     {:noreply, state}

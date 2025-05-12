@@ -10,6 +10,10 @@ defmodule SuperMarketsChain.DataLoader do
       {:error, "error_loading_products"}
   end
 
+  def load_rules do
+    load_file("discount_rules")
+  end
+
   defp load_file(data_type) do
     "data/#{data_type}.json"
     |> priv_path()
