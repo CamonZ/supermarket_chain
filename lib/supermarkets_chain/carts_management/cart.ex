@@ -47,7 +47,7 @@ defmodule SupermarketsChain.CartsManagement.Cart do
     end
   end
 
-  def calculate_total(uuid) do
+  def calculate_total(uuid) when is_binary(uuid) do
     case lookup_cart(uuid) do
       {:cart_lookup, {:ok, pid}} ->
         GenServer.call(pid, :calculate_total)
@@ -55,6 +55,12 @@ defmodule SupermarketsChain.CartsManagement.Cart do
       _ ->
         {:error, "invalid_cart_id"}
     end
+  end
+
+  def calculate_total(items) when is_list(items) do
+    Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+      Decimal.add(acc, item.subtotal)
+    end)
   end
 
   def child_spec(opts) do
@@ -67,6 +73,13 @@ defmodule SupermarketsChain.CartsManagement.Cart do
       id: {__MODULE__, uuid},
       start: {__MODULE__, :start_link, [[uuid: uuid, name: name]]}
     }
+  end
+
+  def total_items(items) do
+    Enum.reduce(items, 0, fn %Item{} = item, acc -> acc + item.count end)
+  rescue
+    _ ->
+      0
   end
 
   @impl true
@@ -119,9 +132,7 @@ defmodule SupermarketsChain.CartsManagement.Cart do
     total =
       state.items
       |> Map.values()
-      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
-        Decimal.add(acc, item.subtotal)
-      end)
+      |> calculate_total()
 
     {:reply, {:ok, total}, state}
   end

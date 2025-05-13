@@ -14,14 +14,14 @@ defmodule SupermarketsChain.CartsManagement.ManagerTest do
   end
 
   test "create_cart spawns a new cart and returns an uuid" do
-    {:ok, _} = Manager.start_link([])
+    Manager.start_link([])
     {:ok, uuid} = Manager.create_cart()
 
     assert {:ok, ^uuid} = Ecto.UUID.cast(uuid)
   end
 
   test "delete_cart deletes terminates the shopping cart" do
-    {:ok, _} = Manager.start_link([])
+    Manager.start_link([])
     {:ok, uuid} = Manager.create_cart()
     {:ok, _} = Manager.lookup_cart(uuid)
 
@@ -30,7 +30,7 @@ defmodule SupermarketsChain.CartsManagement.ManagerTest do
   end
 
   test "lookup/1 returns the pid of a given registered shopping cart" do
-    {:ok, _} = Manager.start_link([])
+    Manager.start_link([])
     {:ok, uuid} = Manager.create_cart()
     {:ok, pid} = Manager.lookup_cart(uuid)
 
@@ -40,7 +40,7 @@ defmodule SupermarketsChain.CartsManagement.ManagerTest do
   end
 
   test "lookup returns error for non-existent uuid" do
-    {:ok, _} = Manager.start_link([])
+    Manager.start_link([])
 
     assert {:error, "not_found"} = Manager.lookup_cart("non-existent-uuid")
   end

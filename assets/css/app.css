@@ -3,3 +3,7 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
+
+.button {
+    @apply px-4 py-1 mt-2 rounded-lg
+}
