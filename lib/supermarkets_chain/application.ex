@@ -7,6 +7,7 @@ defmodule SupermarketsChain.Application do
 
   alias SupermarketsChain.DiscountRulesRepository
   alias SupermarketsChain.ProductsRepository
+  alias SupermarketsChain.CartsManagement.Manager
 
   @impl true
   def start(_type, _args) do
@@ -23,7 +24,7 @@ defmodule SupermarketsChain.Application do
 
     children =
       if Mix.env() != :test do
-        children ++ [ProductsRepository, DiscountRulesRepository]
+        children ++ [ProductsRepository, DiscountRulesRepository, Manager]
       else
         children
       end

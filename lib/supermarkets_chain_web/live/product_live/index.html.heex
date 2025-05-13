@@ -1,0 +1,53 @@
+<%= if @display_cart do %>
+  <div class="cart-items-container">
+    <div class="mb-8 text-2xl">
+      <h1>Cart Items</h1>
+    </div>
+
+    <div class="mx-auto mb-4 gap-4">
+      <%= for item <- @items do %>
+        <div class={"flex flex-row justify-between cart-item-#{item.product_code}"}>
+          <div class="cart-item-name">
+            {item.name}
+          </div>
+          <div class="cart-item-count">
+            {"#{item.count} Unit(s)"}
+          </div>
+          <div class="cart-item-subtotal">
+            £{Decimal.to_string(item.subtotal)}
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <div class="cart-total">
+      Total: £{Decimal.to_string(@cart_total)}
+    </div>
+  </div>
+<% else %>
+  <div>
+    <div class="mb-8 text-xl flex flex-row justify-between">
+      <h1 class="text-2xl">Products List</h1>
+      <div class="cursor-pointer show-cart-toggle" phx-click="show-cart">
+        <span class="shopping-cart-items-count">{@cart_items_count}</span>
+        <.icon name="hero-shopping-cart" />
+      </div>
+    </div>
+
+    <div class="mx-auto grid grid-cols-3 gap-4 products-list">
+      <%= for product <- @products do %>
+        <div class={"product-container product-#{product.code}"}>
+          <h3 class="text-md product-name">{product.name}</h3>
+
+          <button
+            class="button bg-amber-500 text-slate-50 add-to-cart-button"
+            role="button"
+            phx-click="add-to-cart"
+            phx-value-product-code={product.code}
+          >
+            Add to Cart
+          </button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

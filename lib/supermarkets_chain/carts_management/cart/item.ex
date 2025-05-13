@@ -5,6 +5,7 @@ defmodule SupermarketsChain.CartsManagement.Cart.Item do
 
   defstruct product_code: nil,
             count: 0,
+            name: nil,
             unit_price: Decimal.new("0"),
             subtotal: Decimal.new("0")
 
@@ -13,6 +14,7 @@ defmodule SupermarketsChain.CartsManagement.Cart.Item do
   def new(%Product{} = product) do
     %__MODULE__{
       product_code: product.code,
+      name: product.name,
       unit_price: product.price,
       subtotal: product.price,
       count: 1

@@ -8,11 +8,12 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
   alias SupermarketsChain.DiscountRulesRepository
 
   setup_all do
-    {:ok, _} = Registry.start_link(keys: :unique, name: Manager.registry_name())
+    Registry.start_link(keys: :unique, name: Manager.registry_name())
     ProductsRepository.start_link([])
     DiscountRulesRepository.start_link([])
 
     Process.sleep(100)
+
     :ok
   end
 
@@ -35,6 +36,7 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
 
       assert Map.get(items, "CF1") == %Item{
                product_code: "CF1",
+               name: "Coffee",
                count: 1,
                unit_price: Decimal.new("11.23"),
                subtotal: Decimal.new("11.23")
@@ -48,6 +50,7 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
       items = %{
         "CF1" => %Item{
           product_code: "CF1",
+          name: "Coffee",
           count: 1,
           unit_price: Decimal.new("11.23"),
           subtotal: Decimal.new("11.23")
@@ -60,6 +63,7 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
 
       assert Map.get(items, "CF1") == %Item{
                product_code: "CF1",
+               name: "Coffee",
                count: 2,
                unit_price: Decimal.new("11.23"),
                subtotal: Decimal.new("22.46")
@@ -73,6 +77,7 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
       items = %{
         "CF1" => %Item{
           product_code: "CF1",
+          name: "Coffee",
           count: 1,
           unit_price: Decimal.new("11.23"),
           subtotal: Decimal.new("11.23")
@@ -86,12 +91,14 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
       assert items == %{
                "CF1" => %Item{
                  product_code: "CF1",
+                 name: "Coffee",
                  count: 1,
                  unit_price: Decimal.new("11.23"),
                  subtotal: Decimal.new("11.23")
                },
                "SR1" => %Item{
                  product_code: "SR1",
+                 name: "Strawberries",
                  count: 1,
                  unit_price: Decimal.new("5.00"),
                  subtotal: Decimal.new("5.00")
@@ -120,6 +127,7 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
       items = %{
         "CF1" => %Item{
           product_code: "CF1",
+          name: "Coffee",
           count: 2,
           unit_price: Decimal.new("11.23"),
           subtotal: Decimal.new("22.46")
@@ -133,6 +141,7 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
       assert items == %{
                "CF1" => %Item{
                  product_code: "CF1",
+                 name: "Coffee",
                  count: 1,
                  unit_price: Decimal.new("11.23"),
                  subtotal: Decimal.new("11.23")
@@ -147,6 +156,7 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
       items = %{
         "CF1" => %Item{
           product_code: "CF1",
+          name: "Coffee",
           count: 2,
           unit_price: Decimal.new("11.23"),
           subtotal: Decimal.new("22.46")
@@ -165,6 +175,7 @@ defmodule SupermarketsChain.CartsManagement.CartTest do
       items = %{
         "CF1" => %Item{
           product_code: "CF1",
+          name: "Coffee",
           count: 1,
           unit_price: Decimal.new("11.23"),
           subtotal: Decimal.new("11.23")
